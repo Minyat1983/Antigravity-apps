@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './index.css';
-import { geneticsWords, geneticsQuiz, WordEntry, QuizItem } from './data';
+import { geneticsWords, geneticsQuiz } from './data';
 
 type ViewMode = 'overview' | 'flashcards' | 'quiz';
 
