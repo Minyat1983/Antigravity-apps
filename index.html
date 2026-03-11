@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listen and Choose a Response</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #6c63ff;
+      --accent2: #a78bfa;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e8eaf6;
+      --muted: #8b90b0;
+      --radius: 14px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Header ── */
+    header {
+      width: 100%;
+      background: linear-gradient(135deg, #1a1d27 0%, #12152b 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header svg { flex-shrink: 0; }
+    header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.3px; }
+    header span.sub { color: var(--muted); font-size: 0.8rem; margin-left: auto; }
+
+    /* ── Exercise picker ── */
+    .ex-picker {
+      width: 100%;
+      max-width: 900px;
+      padding: 28px 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .ex-picker h2 { font-size: 1rem; color: var(--muted); font-weight: 500; }
+    .ex-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .ex-btn {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: all 0.18s;
+      position: relative;
+    }
+    .ex-btn:hover { border-color: var(--accent); color: var(--accent2); }
+    .ex-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .ex-btn.done  { border-color: var(--green); color: var(--green); }
+    .ex-btn.done::after {
+      content: '✓';
+      position: absolute;
+      top: -6px; right: -6px;
+      background: var(--green);
+      color: #fff;
+      font-size: 0.65rem;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Main card ── */
+    main {
+      width: 100%;
+      max-width: 900px;
+      padding: 28px 20px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .ex-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .ex-title { font-size: 1.4rem; font-weight: 700; }
+    .progress-text { color: var(--muted); font-size: 0.85rem; }
+
+    /* ── Audio player bar ── */
+    .audio-player {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .audio-player-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .audio-player-label {
+      flex: 1;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .audio-player-label strong { color: var(--text); }
+    .ap-time {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+    /* control buttons inside the player */
+    .ap-btn {
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: 50%;
+      width: 38px; height: 38px;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent2);
+      transition: border-color 0.15s, background 0.15s, transform 0.12s;
+    }
+    .ap-btn:hover { border-color: var(--accent); background: rgba(108,99,255,0.1); transform: scale(1.08); }
+    .ap-btn:active { transform: scale(0.94); }
+    .ap-btn.play-pause {
+      width: 46px; height: 46px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(108,99,255,0.4);
+    }
+    .ap-btn.play-pause.playing { animation: pulse 1.2s ease-in-out infinite; }
+    .ap-btn.play-pause:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(108,99,255,0.55); }
+    .ap-btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+    /* seek bar */
+    .ap-seek {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 3px;
+      background: var(--border);
+      cursor: pointer;
+      outline: none;
+    }
+    .ap-seek::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 6px rgba(108,99,255,0.5);
+    }
+    .ap-seek::-moz-range-thumb {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+    }
+
+    /* ── Question card ── */
+    .q-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: border-color 0.2s;
+    }
+    .q-card.answered { border-color: transparent; }
+
+    .q-top {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .q-num {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      background: var(--surface2);
+      border-radius: 6px;
+      padding: 4px 10px;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+
+    /* ── Audio button ── */
+    .audio-btn {
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border: none;
+      border-radius: 50%;
+      width: 48px; height: 48px;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.1rem;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 16px rgba(108,99,255,0.4);
+    }
+    .audio-btn:hover { transform: scale(1.08); box-shadow: 0 6px 22px rgba(108,99,255,0.55); }
+    .audio-btn:active { transform: scale(0.96); }
+    .audio-btn.playing {
+      background: linear-gradient(135deg, #8b5cf6, var(--accent));
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    .audio-btn.disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 4px 16px rgba(108,99,255,0.4); }
+      50%      { box-shadow: 0 4px 28px rgba(108,99,255,0.8); }
+    }
+
+    /* ── Choices ── */
+    .choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      animation: fadeIn 0.3s ease;
+    }
+    @media (max-width: 560px) { .choices { grid-template-columns: 1fr; } }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .choice-btn {
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.88rem;
+      text-align: left;
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      transition: border-color 0.15s, background 0.15s;
+      line-height: 1.45;
+    }
+    .choice-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: rgba(108,99,255,0.08);
+    }
+    .choice-label {
+      font-weight: 700;
+      color: var(--accent2);
+      font-size: 0.82rem;
+      min-width: 18px;
+    }
+    .choice-btn.selected   { border-color: var(--accent); background: rgba(108,99,255,0.15); }
+    .choice-btn.correct    { border-color: var(--green);  background: rgba(34,197,94,0.12); }
+    .choice-btn.incorrect  { border-color: var(--red);    background: rgba(239,68,68,0.12); color: var(--muted); }
+    .choice-btn:disabled   { cursor: default; }
+
+    .choices-hidden { display: none !important; }
+
+    .listen-hint {
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-align: center;
+      font-style: italic;
+    }
+
+    /* ── Nav row (Next / Check Answers) ── */
+    .nav-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 14px;
+    }
+    .nav-btn {
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 13px 28px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: opacity 0.15s, transform 0.15s;
+      box-shadow: 0 4px 14px rgba(108,99,255,0.4);
+    }
+    .nav-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .nav-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+    .nav-btn.check { background: linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 4px 14px rgba(34,197,94,0.4); }
+    .nav-btn.back {
+      background: none;
+      border: 1.5px solid var(--border);
+      color: var(--muted);
+      box-shadow: none;
+    }
+    .nav-btn.back:hover:not(:disabled) { border-color: var(--accent2); color: var(--accent2); opacity: 1; transform: none; }
+
+    /* ── Score banner ── */
+    .score-banner {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      text-align: center;
+    }
+    .score-emoji { font-size: 2.8rem; }
+    .score-num { font-size: 2rem; font-weight: 700; }
+    .score-label { color: var(--muted); font-size: 0.88rem; }
+    .retry-btn {
+      margin-top: 6px;
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      color: var(--accent2);
+      font-family: inherit;
+      font-size: 0.88rem;
+      padding: 8px 20px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .retry-btn:hover { border-color: var(--accent2); }
+
+    /* ── No exercise selected ── */
+    .welcome {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .welcome svg { opacity: 0.35; }
+    .welcome p { max-width: 340px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+    <circle cx="16" cy="16" r="16" fill="url(#hg)"/>
+    <path d="M10 16a6 6 0 0112 0" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="16" cy="22" r="2.5" fill="#fff"/>
+    <path d="M13 22h6" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+    <defs><linearGradient id="hg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop stop-color="#6c63ff"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+  </svg>
+  <h1>Listen &amp; Choose a Response</h1>
+  <span class="sub">TOEFL Listening Practice</span>
+</header>
+
+<div class="ex-picker">
+  <h2>SELECT EXERCISE</h2>
+  <div class="ex-grid" id="exGrid"></div>
+</div>
+
+<main id="mainArea">
+  <div class="welcome" id="welcomeMsg">
+    <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+    </svg>
+    <p>Pick an exercise above to begin. Click the <strong>🎵 audio button</strong> on each question, then choose the best response.</p>
+  </div>
+</main>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+const EXERCISES = [
+  {
+    id: 1,
+    audio: "Audio/Exercise 1.MP3",
+    questions: [
+      { text: "Man: Have you finished reading that book I lent you?", choices: ["(A) I haven't been to the library lately.", "(B) Yes, I returned it last week.", "(C) I borrowed it about a month ago.", "(D) History is my favorite subject."], answer: "C" },
+      { text: "Woman: Do you know what time the meeting starts?", choices: ["(A) The meeting room is on the third floor.", "(B) Yes, it's scheduled for 2 PM.", "(C) I was at the last meeting too.", "(D) History is my favorite subject."], answer: "B" },
+      { text: "Woman: I'm afraid the concert is sold out.", choices: ["(A) I really enjoyed the performance.", "(B) Oh no, I was really hoping to go.", "(C) The tickets are in my bag.", "(D) Yes, it's a very popular band."], answer: "B" },
+      { text: "Man: Who's in charge of organizing the team party?", choices: ["(A) The party was a lot of fun.", "(B) I believe Sarah is handling it.", "(C) Let's invite the whole team.", "(D) We should get some balloons."], answer: "B" },
+      { text: "Woman: It's a beautiful day, isn't it?", choices: ["(A) Yes, it certainly is.", "(B) I have an appointment today.", "(C) The rain should stop soon.", "(D) My birthday is next week."], answer: "A" },
+      { text: "Man: Can you pass me the salt, please?", choices: ["(A) It needs a little more pepper.", "(B) The food is delicious.", "(C) I'll have the same thing.", "(D) Sure, here you go."], answer: "D" },
+      { text: "Woman: When is the final report due?", choices: ["(A) I'm almost finished with it.", "(B) The deadline is this Friday.", "(C) Let's report the issue now.", "(D) Yes, it's the final one."], answer: "B" },
+      { text: "Man: I can't seem to find my keys anywhere.", choices: ["(A) The door is already locked.", "(B) I have a spare key for you.", "(C) Have you checked your coat pocket?", "(D) I found them in the car."], answer: "C" }
+    ]
+  },
+  {
+    id: 2,
+    audio: "Audio/Exercise 2.MP3",
+    questions: [
+      { text: "Woman: How was your trip to the museum?", choices: ["(A) It opens at 10 a.m.", "(B) It was fascinating; I learned a lot.", "(C) The museum is downtown.", "(D) I'm planning on a trip over there."], answer: "B" },
+      { text: "Man: We should get together for lunch sometime.", choices: ["(A) The cafeteria has great sandwiches.", "(B) I'm not very hungry right now.", "(C) That sounds like a great idea.", "(D) We already had lunch."], answer: "C" },
+      { text: "Woman: Why was the flight delayed?", choices: ["(A) It will depart from Gate B.", "(B) Because of bad weather conditions.", "(C) I missed my flight this morning.", "(D) We should have arrived earlier."], answer: "B" },
+      { text: "Man: Would you mind helping me move this desk?", choices: ["(A) I don't think it will fit.", "(B) My mind is already made up.", "(C) The office is down the hall.", "(D) Not at all, where should we put it?"], answer: "D" },
+      { text: "Woman: Let's try that new Italian restaurant downtown.", choices: ["(A) I can make a reservation for us.", "(B) I don't really like Italian food.", "(C) The restaurant is usually crowded.", "(D) I ate there last week."], answer: "A" },
+      { text: "Man: Did you remember to water the plants?", choices: ["(A) They're in the garden.", "(B) Oh, I completely forgot.", "(C) The flowers are beautiful.", "(D) I bought some new pots."], answer: "B" },
+      { text: "Woman: This suitcase is too heavy for me to lift.", choices: ["(A) We are leaving in an hour.", "(B) Let me give you a hand with that.", "(C) Your flight is on time.", "(D) The baggage claim is over there."], answer: "B" },
+      { text: "Man: I'm not sure which course to take next semester.", choices: ["(A) The professor is very knowledgeable.", "(B) The registration deadline has passed.", "(C) Have you spoken with your academic advisor?", "(D) The course was quite challenging."], answer: "C" }
+    ]
+  },
+  {
+    id: 3,
+    audio: "Audio/Exercise 3.MP3",
+    questions: [
+      { text: "Woman: What time should we meet at the movie theater?", choices: ["(A) I've already seen that film.", "(B) How about thirty minutes before the show starts?", "(C) The theater is on Maple Street.", "(D) Let's buy the tickets online."], answer: "B" },
+      { text: "Man: The traffic is terrible this morning.", choices: ["(A) I know, I'm going to be late for my meeting.", "(B) The bus stop is just around the corner.", "(C) I prefer to take the train.", "(D) We should listen to the morning traffic."], answer: "A" },
+      { text: "Woman: Didn't you say the assignment was optional?", choices: ["(A) No, it's a required part of our grade.", "(B) I haven't started the assignment yet.", "(C) Yes, you have permission.", "(D) The instructions were very clear."], answer: "A" },
+      { text: "Man: I'm going to the post office; do you need anything?", choices: ["(A) The package arrived yesterday.", "(B) It closes at five o'clock.", "(C) Actually, could you mail this letter for me?", "(D) I don't have any stamps."], answer: "C" },
+      { text: "Woman: How do I get to the university's main administrative building?", choices: ["(A) The administration is very helpful.", "(B) My major is in business administration.", "(C) It's the large brick building right across the main lawn.", "(D) You need to submit your application by Friday."], answer: "C" },
+      { text: "Man: I heard you got the internship. Congratulations!", choices: ["(A) Thank you, I'm really excited to start.", "(B) The application process was very long.", "(C) I'm hoping to hear back from them soon.", "(D) The company is located in the city center."], answer: "A" },
+      { text: "Woman: Is this seat taken?", choices: ["(A) No, please go ahead.", "(B) I'll take this one, thanks.", "(C) Yes, I have a ticket.", "(D) The train is about to depart."], answer: "A" },
+      { text: "Man: You forgot to turn off the lights again.", choices: ["(A) The switch is by the door.", "(B) The room is very bright.", "(C) My apologies, I'll be more careful.", "(D) No, the light is still working fine."], answer: "C" }
+    ]
+  },
+  {
+    id: 4,
+    audio: "Audio/Exercise 4.MP3",
+    questions: [
+      { text: "Woman: I think we're lost.", choices: ["(A) Yes, this is the right place.", "(B) Let's check the map on my phone.", "(C) The tour guide was very informative.", "(D) We'll be there in ten minutes."], answer: "B" },
+      { text: "Man: The presentation is scheduled for 10 a.m. tomorrow.", choices: ["(A) I can't present it to you then.", "(B) I'll make sure all the slides are ready.", "(C) The meeting room is booked.", "(D) It was a very interesting presentation."], answer: "B" },
+      { text: "Woman: What's the Wi-Fi password?", choices: ["(A) I can't get a good signal here.", "(B) The network name is \"CampusGuest.\"", "(C) I left my laptop at home.", "(D) Let me check the sign on the wall for you."], answer: "D" },
+      { text: "Man: This coffee is a bit too strong for my liking.", choices: ["(A) I'll have a cup of tea, please.", "(B) The café is just around the corner.", "(C) Would you like me to add some more hot water?", "(D) It's a special blend from Colombia."], answer: "C" },
+      { text: "Woman: Have you seen my glasses?", choices: ["(A) I think I saw them on the kitchen counter.", "(B) Your eyesight is getting worse.", "(C) I prefer contact lenses.", "(D) These frames look good on you."], answer: "A" },
+      { text: "Man: The printer is out of paper.", choices: ["(A) I'll print the document later.", "(B) This model is very efficient.", "(C) The paper jam is difficult to fix.", "(D) There should be some more in the supply closet."], answer: "D" },
+      { text: "Man: Could you tell me how to get to the main library from here?", choices: ["(A) I don't have the time to tell you.", "(B) The library closes at 9 PM tonight.", "(C) Of course. It's just two blocks down on the left.", "(D) It has a great selection of academic journals."], answer: "C" },
+      { text: "Woman: It's getting a bit chilly in here, isn't it?", choices: ["(A) I'll go ahead and close the window.", "(B) The weather forecast said it would be warm.", "(C) No, I haven't had chili in a long time.", "(D) It was much colder yesterday."], answer: "A" }
+    ]
+  },
+  {
+    id: 5,
+    audio: "Audio/Exercise 5.MP3",
+    questions: [
+      { text: "Man: I'm not sure I understand the last part of the assignment.", choices: ["(A) The assignment is due on Friday.", "(B) Why don't we ask the professor for clarification?", "(C) I already finished it last night.", "(D) It's the most difficult one this semester."], answer: "B" },
+      { text: "Woman: I'm so sorry for being late for the meeting.", choices: ["(A) You should have left your house earlier.", "(B) The meeting started twenty minutes ago.", "(C) Yes, it is quite late in the evening.", "(D) No problem, we just got started."], answer: "D" },
+      { text: "Man: Which of these two ties do you think goes better with my suit?", choices: ["(A) I think that suit is very expensive.", "(B) The striped one definitely looks more professional.", "(C) You should probably buy a new shirt.", "(D) Both of those ties are made of silk."], answer: "B" },
+      { text: "Woman: You look like you're struggling with those boxes.", choices: ["(A) Yes, they are quite heavy.", "(B) I can manage by myself, thank you.", "(C) Thanks, I would really appreciate a hand.", "(D) These boxes need to go to the mailroom."], answer: "C" },
+      { text: "Man: Didn't you say the workshop was in Room 3B?", choices: ["(A) I don't like attending workshops.", "(B) No, I believe it's in 2C. Let me check the email.", "(C) Yes, I did see that room.", "(D) The building is on the other side of campus."], answer: "B" },
+      { text: "Woman: I can't believe we actually won the championship!", choices: ["(A) I knew we were going to lose.", "(B) I know! All our hard work really paid off.", "(C) The other team was not very good.", "(D) We should have practiced more often."], answer: "B" },
+      { text: "Man: Would you mind saving my seat? I'll be right back.", choices: ["(A) This is my favorite seat in the theater.", "(B) I am also leaving in a minute.", "(C) Sure, no problem at all.", "(D) You should try to find another one."], answer: "C" },
+      { text: "Woman: Are you available to discuss the project after our morning classes?", choices: ["(A) Yes, 2 PM works well for me.", "(B) The project is extremely difficult.", "(C) I already had my morning classes.", "(D) No, I am not free from the discussion."], answer: "A" }
+    ]
+  },
+  {
+    id: 6,
+    audio: "Audio/Exercise 6.MP3",
+    questions: [
+      { text: "Man: So, just to confirm, the deadline was extended by one week?", choices: ["(A) We need to work much faster now.", "(B) I haven't even started on it yet.", "(C) Yes, that's what the professor announced.", "(D) The original deadline was yesterday."], answer: "C" },
+      { text: "Woman: That was an excellent presentation you gave this afternoon.", choices: ["(A) I was really nervous the whole time.", "(B) Thank you, I'm glad you enjoyed it.", "(C) It could have been much better.", "(D) The topic was assigned to me."], answer: "B" },
+      { text: "Man: Is it alright if I turn up the heat?", choices: ["(A) The window is difficult to open.", "(B) Actually, I'm a bit warm, if you don't mind.", "(C) Yes, it is all right here.", "(D) I think the heater is broken."], answer: "B" },
+      { text: "Woman: How about we try that new Thai restaurant downtown?", choices: ["(A) I ate there just last week.", "(B) I've heard it's very popular.", "(C) That sounds delicious! I'm in.", "(D) That restaurant is closed on Tuesdays."], answer: "C" },
+      { text: "Man: I think we should cancel the company picnic.", choices: ["(A) That's a terrible idea.", "(B) I see your point, but a lot of people are looking forward to it.", "(C) The picnic is scheduled for Saturday.", "(D) Yes, let's just cancel it."], answer: "B" },
+      { text: "Woman: Why was the train from Springfield delayed?", choices: ["(A) The train is scheduled to arrive at 8 PM.", "(B) They announced it was due to a signal problem.", "(C) I hope we arrive on time.", "(D) We should have driven instead."], answer: "B" },
+      { text: "Man: Watch out, I just spilled some water on the floor.", choices: ["(A) Oh, thanks for letting me know.", "(B) Why is the floor wet?", "(C) I am not watching you.", "(D) This floor is very clean."], answer: "A" },
+      { text: "Woman: Does that explanation make sense to you?", choices: ["(A) You should explain it one more time.", "(B) It is very sensible information.", "(C) Yes, I think I understand it now.", "(D) I don't make any sense of it."], answer: "C" }
+    ]
+  },
+  {
+    id: 7,
+    audio: "Audio/Exercise 7 [revised].mp3",
+    questions: [
+      { text: "Man: I'm sorry, what did you say your name was again?", choices: ["(A) You weren't paying attention.", "(B) It's David. David Chen.", "(C) My name isn't important.", "(D) I don't know your name either."], answer: "B" },
+      { text: "Woman: I heard you weren't feeling well. Are you okay?", choices: ["(A) It was just a cold.", "(B) Yes, I was at work yesterday.", "(C) Thanks for asking. I'm doing much better now.", "(D) You shouldn't have heard that."], answer: "C" },
+      { text: "Man: Will you be attending the seminar on Thursday?", choices: ["(A) The seminar is in the main auditorium.", "(B) I don't like the topic.", "(C) Yes, I plan on being there.", "(D) I might attend it."], answer: "C" },
+      { text: "Woman: How is your lab report coming along?", choices: ["(A) It's due in three days.", "(B) I'm almost finished with the conclusion section.", "(C) The experiment was very complicated.", "(D) I am not doing a lab report."], answer: "B" },
+      { text: "Man: Can I get you something from the kitchen?", choices: ["(A) The kitchen is over there.", "(B) I'm not hungry right now.", "(C) I'd love a glass of water, thanks.", "(D) You are a very kind person."], answer: "C" },
+      { text: "Woman: Would you prefer to study at the library or in the student lounge?", choices: ["(A) I think the library will be quieter.", "(B) It depends on when we study.", "(C) Both are on campus.", "(D) The student lounge has comfortable chairs."], answer: "A" },
+      { text: "Man: Excuse me, where is the financial aid office?", choices: ["(A) The office is very busy at this time of year.", "(B) Are you looking for a scholarship?", "(C) It's on the second floor, next to the admissions office.", "(D) I work in the registrar's office."], answer: "C" },
+      { text: "Woman: What did you think of the documentary we watched in class?", choices: ["(A) I found it a bit biased, to be honest.", "(B) I missed that class.", "(C) The professor talks very fast.", "(D) The documentary was 90 minutes long."], answer: "A" }
+    ]
+  },
+  {
+    id: 8,
+    audio: "Audio/Exercise 8.MP3",
+    questions: [
+      { text: "Man: Why haven't you responded to my email?", choices: ["(A) The email is not important.", "(B) My apologies, it's been a hectic week. I'll reply today.", "(C) I will respond to it tomorrow morning.", "(D) I forgot to check my inbox."], answer: "B" },
+      { text: "Woman: How much does it cost to rent a locker for the semester?", choices: ["(A) It's twenty dollars. You can pay at the front desk.", "(B) The gym closes at 10 PM.", "(C) The lockers are in the main hallway.", "(D) You can rent one online."], answer: "A" },
+      { text: "Man: The cafe is already closed for the night.", choices: ["(A) Why did it close so early?", "(B) That's very inconvenient for us.", "(C) All right, let's just go back to the dorm then.", "(D) We cannot have coffee now."], answer: "C" },
+      { text: "Woman: Do you happen to have the time?", choices: ["(A) Yes, it's almost noon.", "(B) I have plenty of time.", "(C) The time is almost up.", "(D) My watch is running slow."], answer: "A" },
+      { text: "Man: Are you ready to order, or do you need a few more minutes?", choices: ["(A) I'm not very hungry.", "(B) Yes, I'll have the vegetarian pasta.", "(C) I have not seen the menu.", "(D) What do you recommend I get?"], answer: "B" },
+      { text: "Woman: Could you please forward me that article when you have a chance?", choices: ["(A) What is the article about?", "(B) Of course, I'll send it over right now.", "(C) That is a very interesting article.", "(D) The article is due tomorrow."], answer: "B" },
+      { text: "Man: Are you certain you locked the front door?", choices: ["(A) We are completely safe.", "(B) I'm pretty sure, but I'll go back and check.", "(C) No, I do not know how.", "(D) The key is in my pocket."], answer: "B" },
+      { text: "Woman: You should ask for an extension on the paper.", choices: ["(A) It's only a short paper.", "(B) I don't like asking for help.", "(C) You're probably right. I'll email the professor.", "(D) Thank you for your nice suggestion."], answer: "C" }
+    ]
+  },
+  {
+    id: 9,
+    audio: "Audio/Exercise 9 [revised].mp3",
+    questions: [
+      { text: "Man: Do you sell international stamps here?", choices: ["(A) Let me look behind the counter for you.", "(B) This is the last one I have.", "(C) You need to go to the post office.", "(D) We have many domestic stamps."], answer: "A" },
+      { text: "Woman: Thanks for having me over for dinner.", choices: ["(A) Dinner will be served shortly.", "(B) It was our pleasure to have you.", "(C) Please have a seat.", "(D) My apartment is very small."], answer: "B" },
+      { text: "Man: How was your final exam in chemistry?", choices: ["(A) I was in the exam for two hours.", "(B) It was challenging, but I think I did well.", "(C) Chemistry is a difficult subject.", "(D) The professor is a fair grader."], answer: "B" },
+      { text: "Woman: Would you like to join our study group?", choices: ["(A) What time are you meeting?", "(B) Where do you plan to study?", "(C) Thanks for the offer, but I prefer to study alone.", "(D) No, I am too busy for that."], answer: "C" },
+      { text: "Man: So, you're a physics major?", choices: ["(A) Yes, physics is my favorite.", "(B) Actually, my major is chemistry, but I'm taking a physics class.", "(C) No, that is not my major.", "(D) Physics is a big department."], answer: "B" },
+      { text: "Woman: Is there a bookstore on campus?", choices: ["(A) The books are very expensive.", "(B) Yes, it's in the student union building.", "(C) It closes at 6 PM.", "(D) It depends on what book you want."], answer: "B" },
+      { text: "Man: I'm really grateful for your help moving my things.", choices: ["(A) The furniture was very heavy.", "(B) Don't mention it. Happy to help out a friend.", "(C) You should have hired movers.", "(D) You are most welcome."], answer: "B" },
+      { text: "Woman: Did you hear that Professor Jones is retiring this year?", choices: ["(A) When did he start teaching?", "(B) I didn't have him for any classes.", "(C) Oh, really? The department will miss him.", "(D) Yes, I heard he will retire."], answer: "C" }
+    ]
+  },
+  {
+    id: 10,
+    audio: "Audio/Exercise 10 [revised].mp3",
+    questions: [
+      { text: "Man: What did you think of the movie's special effects?", choices: ["(A) I saw that movie a week ago.", "(B) The main actor was very famous.", "(C) I thought they were incredibly realistic.", "(D) The movie was almost three hours long."], answer: "C" },
+      { text: "Woman: Did the professor mention if the test will be multiple-choice?", choices: ["(A) The test is on Friday.", "(B) He said it would be a mix of multiple-choice and essays.", "(C) We should form a study group.", "(D) I am not ready for the test."], answer: "B" },
+      { text: "Man: I'd like to return this jacket, please. It's the wrong size.", choices: ["(A) Would you like to try on another one?", "(B) This jacket is very popular.", "(C) Certainly. Do you have the original receipt?", "(D) We have that in a different color."], answer: "C" },
+      { text: "Woman: I think we should start our presentation with a surprising statistic.", choices: ["(A) Our presentation is ten minutes long.", "(B) That's a great idea; it will grab the audience's attention.", "(C) The presentation is for our history class.", "(D) I haven't started working on the presentation yet."], answer: "B" },
+      { text: "Man: Do you have any plans for the holiday weekend?", choices: ["(A) Last weekend was very relaxing.", "(B) I'm going camping with my family.", "(C) The holiday is on Monday.", "(D) The weather is supposed to be nice."], answer: "B" },
+      { text: "Woman: It looks like it's going to rain soon.", choices: ["(A) I hope it doesn't get too cold.", "(B) Yes, we should probably bring an umbrella.", "(C) I love it when the weather is sunny.", "(D) Yesterday was also a cloudy day."], answer: "B" },
+      { text: "Man: How long is the wait for a table?", choices: ["(A) We have a reservation for two people.", "(B) The restaurant is very crowded tonight.", "(C) It should be about fifteen to twenty minutes.", "(D) The food here is excellent."], answer: "C" },
+      { text: "Woman: I'm really worried about my final grades.", choices: ["(A) The semester is almost over.", "(B) I know you've studied hard, so I'm sure you'll do fine.", "(C) Which classes are you taking?", "(D) Your grades were good last semester."], answer: "B" }
+    ]
+  }
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let currentEx        = null;
+let userAnswers      = {};     // qIndex -> letter
+let exerciseListened = false;  // true once audio has played
+let currentQIdx      = 0;      // which question is on screen
+let submitted        = false;
+let completedExercises = new Set();
+let currentAudio     = null;
+
+// ─── DOM REFS ─────────────────────────────────────────────────────────────────
+const exGrid    = document.getElementById('exGrid');
+const mainArea  = document.getElementById('mainArea');
+
+// ─── EXERCISE BUTTONS ─────────────────────────────────────────────────────────
+function renderExGrid() {
+  exGrid.innerHTML = '';
+  EXERCISES.forEach(ex => {
+    const btn = document.createElement('button');
+    btn.className = 'ex-btn' +
+      (currentEx && currentEx.id === ex.id ? ' active' : '') +
+      (completedExercises.has(ex.id) ? ' done' : '');
+    btn.textContent = `Exercise ${ex.id}`;
+    btn.id = `exBtn${ex.id}`;
+    btn.addEventListener('click', () => loadExercise(ex.id));
+    exGrid.appendChild(btn);
+  });
+}
+
+// ─── LOAD EXERCISE ────────────────────────────────────────────────────────────
+function loadExercise(id) {
+  stopAudio();
+  currentEx        = EXERCISES.find(e => e.id === id);
+  userAnswers      = {};
+  exerciseListened = false;
+  currentQIdx      = 0;
+  submitted        = false;
+  renderExGrid();
+  renderExercise();
+}
+
+// ─── RENDER FULL EXERCISE SHELL (header + audio bar + card slot + nav) ────────
+function renderExercise() {
+  if (!currentEx) return;
+  mainArea.innerHTML = '';
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'ex-header';
+  header.innerHTML = `
+    <span class="ex-title">Exercise ${currentEx.id}</span>
+    <span class="progress-text" id="progressText">${progressText()}</span>
+  `;
+  mainArea.appendChild(header);
+
+  // Audio bar
+  mainArea.appendChild(buildAudioBar());
+
+  // Card slot — single question card lives here
+  const slot = document.createElement('div');
+  slot.id = 'cardSlot';
+  mainArea.appendChild(slot);
+
+  // Nav row
+  mainArea.appendChild(buildNavRow());
+
+  // Render the first question
+  renderCurrentCard();
+}
+
+// ─── RENDER CURRENT QUESTION INTO SLOT ───────────────────────────────────────
+function renderCurrentCard() {
+  const slot = document.getElementById('cardSlot');
+  if (!slot || !currentEx) return;
+  slot.innerHTML = '';
+  slot.appendChild(buildQuestionCard(currentEx.questions[currentQIdx], currentQIdx));
+  updateProgressText();
+  updateNavRow();
+}
+
+// ─── AUDIO BAR (full player) ─────────────────────────────────────────────────────────
+function buildAudioBar() {
+  const wrap = document.createElement('div');
+  wrap.className = 'audio-player';
+  wrap.id = 'audioBar';
+
+  // ─ Top row: label | rewind | play/pause | forward | time ─
+  const top = document.createElement('div');
+  top.className = 'audio-player-top';
+
+  const label = document.createElement('span');
+  label.className = 'audio-player-label';
+  label.id = 'audioBarLabel';
+  label.innerHTML = exerciseListened
+    ? '<strong>Audio</strong> — replay anytime'
+    : '🎵 Play audio first to unlock choices';
+  top.appendChild(label);
+
+  // Rewind 10s
+  const rew = document.createElement('button');
+  rew.className = 'ap-btn'; rew.id = 'apRew'; rew.title = 'Rewind 10 s';
+  rew.innerHTML = rewIcon();
+  rew.addEventListener('click', () => {
+    if (currentAudio) { currentAudio.currentTime = Math.max(0, currentAudio.currentTime - 10); updateSeek(); }
+  });
+  top.appendChild(rew);
+
+  // Play / Pause
+  const pp = document.createElement('button');
+  pp.className = 'ap-btn play-pause'; pp.id = 'apPlayPause'; pp.title = 'Play / Pause';
+  pp.innerHTML = playIcon();
+  pp.addEventListener('click', handleAudio);
+  top.appendChild(pp);
+
+  // Forward 10s
+  const fwd = document.createElement('button');
+  fwd.className = 'ap-btn'; fwd.id = 'apFwd'; fwd.title = 'Forward 10 s';
+  fwd.innerHTML = fwdIcon();
+  fwd.addEventListener('click', () => {
+    if (currentAudio) { currentAudio.currentTime = Math.min(currentAudio.duration || 0, currentAudio.currentTime + 10); updateSeek(); }
+  });
+  top.appendChild(fwd);
+
+  // Time display
+  const time = document.createElement('span');
+  time.className = 'ap-time'; time.id = 'apTime';
+  time.textContent = '0:00 / --:--';
+  top.appendChild(time);
+
+  wrap.appendChild(top);
+
+  // ─ Seek bar ─
+  const seek = document.createElement('input');
+  seek.type = 'range'; seek.className = 'ap-seek'; seek.id = 'apSeek';
+  seek.min = 0; seek.max = 100; seek.value = 0; seek.step = 0.1;
+  seek.addEventListener('input', () => {
+    if (currentAudio && currentAudio.duration) {
+      currentAudio.currentTime = (seek.value / 100) * currentAudio.duration;
+    }
+  });
+  wrap.appendChild(seek);
+
+  return wrap;
+}
+
+// Sync seek bar + time display (called via rAF loop)
+function updateSeek() {
+  const audio = currentAudio;
+  const seek  = document.getElementById('apSeek');
+  const time  = document.getElementById('apTime');
+  if (!audio || !seek || !time) return;
+  const dur = audio.duration || 0;
+  if (dur > 0) seek.value = (audio.currentTime / dur) * 100;
+  time.textContent = `${fmt(audio.currentTime)} / ${dur ? fmt(dur) : '--:--'}`;
+}
+
+function fmt(s) {
+  const m = Math.floor(s / 60);
+  const ss = String(Math.floor(s % 60)).padStart(2, '0');
+  return `${m}:${ss}`;
+}
+
+let rafId = null;
+function startSeekLoop() {
+  if (rafId) cancelAnimationFrame(rafId);
+  function tick() { updateSeek(); rafId = requestAnimationFrame(tick); }
+  rafId = requestAnimationFrame(tick);
+}
+function stopSeekLoop() {
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+}
+
+// ─── QUESTION CARD ────────────────────────────────────────────────────────────
+function buildQuestionCard(q, i) {
+  const card = document.createElement('div');
+  card.className = 'q-card';
+  card.id = `card${i}`;
+
+  // Q-number badge
+  const top = document.createElement('div');
+  top.className = 'q-top';
+  const num = document.createElement('span');
+  num.className = 'q-num';
+  num.textContent = `Q${i + 1} of ${currentEx.questions.length}`;
+  top.appendChild(num);
+  card.appendChild(top);
+
+  // Choices
+  const choicesDiv = document.createElement('div');
+  choicesDiv.className = 'choices' + (exerciseListened ? '' : ' choices-hidden');
+  choicesDiv.id = `choices${i}`;
+
+  q.choices.forEach(c => {
+    const letter = c.charAt(1);
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.disabled = !exerciseListened;
+    btn.dataset.letter = letter;
+
+    if (userAnswers[i] === letter) btn.classList.add('selected');
+
+    btn.innerHTML = `<span class="choice-label">${letter}</span><span>${c.slice(4)}</span>`;
+    btn.addEventListener('click', () => handleChoice(i, letter));
+    choicesDiv.appendChild(btn);
+  });
+  card.appendChild(choicesDiv);
+
+  // Hint while audio not yet played
+  if (!exerciseListened) {
+    const hint = document.createElement('p');
+    hint.className = 'listen-hint';
+    hint.id = `hint${i}`;
+    hint.textContent = 'Play the exercise audio above to unlock choices';
+    card.appendChild(hint);
+  }
+
+  return card;
+}
+
+// ─── NAV ROW ──────────────────────────────────────────────────────────────────
+function buildNavRow() {
+  const row = document.createElement('div');
+  row.className = 'nav-row';
+  row.id = 'navRow';
+
+  // ← Back button
+  const backBtn = document.createElement('button');
+  backBtn.className = 'nav-btn back';
+  backBtn.id = 'backBtn';
+  backBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Back';
+  backBtn.disabled = (currentQIdx === 0);
+  backBtn.addEventListener('click', handleBack);
+  row.appendChild(backBtn);
+
+  // Spacer
+  const spacer = document.createElement('span');
+  spacer.style.flex = '1';
+  row.appendChild(spacer);
+
+  // Next / Check Answers button
+  const isLast    = (currentQIdx === currentEx.questions.length - 1);
+  const hasAnswer = userAnswers[currentQIdx] !== undefined;
+  const fwdBtn    = document.createElement('button');
+  fwdBtn.id       = 'navBtn';
+  fwdBtn.disabled = !hasAnswer;
+
+  if (isLast) {
+    fwdBtn.className = 'nav-btn check';
+    fwdBtn.innerHTML = 'Check Answers ✓';
+    fwdBtn.addEventListener('click', handleSubmit);
+  } else {
+    fwdBtn.className = 'nav-btn';
+    fwdBtn.innerHTML = 'Next <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+    fwdBtn.addEventListener('click', handleNext);
+  }
+  row.appendChild(fwdBtn);
+  return row;
+}
+
+function updateNavRow() {
+  const row = document.getElementById('navRow');
+  if (!row || !currentEx) return;
+  row.replaceWith(buildNavRow());
+}
+
+
+// ─── BACK ─────────────────────────────────────────────────────────────────────
+function handleBack() {
+  if (currentQIdx <= 0) return;
+  currentQIdx--;
+  renderCurrentCard();
+  const slot = document.getElementById('cardSlot');
+  if (slot) slot.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ─── NEXT ─────────────────────────────────────────────────────────────────────
+function handleNext() {
+  if (currentQIdx >= currentEx.questions.length - 1) return;
+  currentQIdx++;
+  renderCurrentCard();
+  // scroll card into view smoothly
+  const slot = document.getElementById('cardSlot');
+  if (slot) slot.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ─── AUDIO ────────────────────────────────────────────────────────────────────
+function handleAudio() {
+  const ex = currentEx;
+  if (!ex) return;
+
+  if (currentAudio && !currentAudio.paused) {
+    currentAudio.pause();
+    setPlayPauseIcon(false);
+    stopSeekLoop();
+    return;
+  }
+
+  if (!currentAudio) {
+    const audio = new Audio(ex.audio);
+    currentAudio = audio;
+    audio.addEventListener('loadedmetadata', updateSeek);
+    audio.addEventListener('ended', () => {
+      setPlayPauseIcon(false);
+      stopSeekLoop();
+      revealCurrent();
+    });
+    audio.addEventListener('playing', () => {
+      setPlayPauseIcon(true);
+      startSeekLoop();
+      revealCurrent();
+    });
+    audio.addEventListener('pause', () => {
+      setPlayPauseIcon(false);
+      stopSeekLoop();
+    });
+  }
+
+  currentAudio.play().catch(() => { setPlayPauseIcon(false); stopSeekLoop(); });
+}
+
+function stopAudio() {
+  stopSeekLoop();
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
+  }
+  setPlayPauseIcon(false);
+}
+
+function setPlayPauseIcon(playing) {
+  const btn = document.getElementById('apPlayPause');
+  if (!btn) return;
+  playing ? btn.classList.add('playing') : btn.classList.remove('playing');
+  btn.innerHTML = playing ? pauseIcon() : playIcon();
+}
+
+// Reveal choices on the current card
+function revealCurrent() {
+  if (exerciseListened) return;  // already unlocked
+  exerciseListened = true;
+
+  const lbl = document.getElementById('audioBarLabel');
+  if (lbl) lbl.innerHTML = '<strong>Audio played</strong> — replay anytime';
+
+  // Unlock just the visible card (currentQIdx)
+  const choices = document.getElementById(`choices${currentQIdx}`);
+  const hint    = document.getElementById(`hint${currentQIdx}`);
+  if (choices) {
+    choices.classList.remove('choices-hidden');
+    choices.querySelectorAll('.choice-btn').forEach(b => { b.disabled = false; });
+  }
+  if (hint) hint.remove();
+}
+
+// ─── CHOICE ───────────────────────────────────────────────────────────────────
+function handleChoice(qIdx, letter) {
+  if (!exerciseListened) return;
+  userAnswers[qIdx] = letter;
+
+  const choicesDiv = document.getElementById(`choices${qIdx}`);
+  if (choicesDiv) {
+    choicesDiv.querySelectorAll('.choice-btn').forEach(btn => {
+      btn.classList.remove('selected');
+      if (btn.dataset.letter === letter) btn.classList.add('selected');
+    });
+  }
+
+  updateProgressText();
+  updateNavRow();   // enable Next / Check Answers
+}
+
+// ─── PROGRESS ─────────────────────────────────────────────────────────────────
+function progressText() {
+  if (!currentEx) return '';
+  return `${Object.keys(userAnswers).length} / ${currentEx.questions.length} answered`;
+}
+function updateProgressText() {
+  const pt = document.getElementById('progressText');
+  if (pt) pt.textContent = progressText();
+}
+
+// ─── SUBMIT ───────────────────────────────────────────────────────────────────
+function handleSubmit() {
+  if (!currentEx) return;
+  submitted = true;
+  stopAudio();
+
+  const ex = currentEx;
+  let correct = 0;
+  ex.questions.forEach((q, i) => { if (userAnswers[i] === q.answer) correct++; });
+
+  // Show full results — rebuild the card slot with ALL question results
+  const slot = document.getElementById('cardSlot');
+  if (slot) {
+    slot.innerHTML = '';
+    ex.questions.forEach((q, i) => {
+      const card = document.createElement('div');
+      card.className = 'q-card';
+      const top = document.createElement('div');
+      top.className = 'q-top';
+      const num = document.createElement('span');
+      num.className = 'q-num';
+      num.textContent = `Q${i + 1}`;
+      top.appendChild(num);
+      card.appendChild(top);
+
+      const choicesDiv = document.createElement('div');
+      choicesDiv.className = 'choices';
+      q.choices.forEach(c => {
+        const letter = c.charAt(1);
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.disabled = true;
+        btn.dataset.letter = letter;
+        if (letter === q.answer) btn.classList.add('correct');
+        else if (letter === userAnswers[i]) btn.classList.add('incorrect');
+        btn.innerHTML = `<span class="choice-label">${letter}</span><span>${c.slice(4)}</span>`;
+        choicesDiv.appendChild(btn);
+      });
+      card.appendChild(choicesDiv);
+      slot.appendChild(card);
+    });
+  }
+
+  // Disable audio
+  const ab = document.getElementById('exAudioBtn');
+  if (ab) { ab.disabled = true; ab.classList.add('disabled'); }
+
+  // Replace nav row with score banner
+  const navRow = document.getElementById('navRow');
+  if (navRow) navRow.replaceWith(buildScoreBanner(correct, ex.questions.length));
+
+  completedExercises.add(ex.id);
+  renderExGrid();
+}
+
+// ─── SCORE BANNER ─────────────────────────────────────────────────────────────
+function buildScoreBanner(correct, total) {
+  const pct   = Math.round((correct / total) * 100);
+  const emoji = pct === 100 ? '🏆' : pct >= 75 ? '🎉' : pct >= 50 ? '👍' : '📚';
+  const banner = document.createElement('div');
+  banner.className = 'score-banner';
+  banner.innerHTML = `
+    <div class="score-emoji">${emoji}</div>
+    <div class="score-num">${correct} / ${total}</div>
+    <div class="score-label">${pct}% correct</div>
+    <button class="retry-btn" id="retryBtn">Try Again</button>
+  `;
+  banner.querySelector('#retryBtn').addEventListener('click', () => loadExercise(currentEx.id));
+  return banner;
+}
+
+// ─── ICONS ────────────────────────────────────────────────────────────────────
+function playIcon() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+}
+function pauseIcon() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+}
+function rewIcon() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>`;
+}
+function fwdIcon() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>`;
+}
+function speakerIcon() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+  </svg>`;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderExGrid();
+</script>
+</body>
+</html>
